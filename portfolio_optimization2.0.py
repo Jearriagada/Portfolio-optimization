@@ -66,3 +66,57 @@ resultados = '\nResultados optimización\n'\
 + 'Ratio de sharpe: ' + str(op_sharpe)
 
 print(resultados)
+
+#Test montecarlo
+def montecarlo(data,tickers,simul):
+    monte_ret = []
+    monte_desv = []
+    monte_sharpe = []
+    weights = []
+    ret = data.mean().values
+    cov = data.cov()
+    df1 = pd.DataFrame(columns=tickers)
+    for i in range(simul):
+        w = np.random.rand(len(tickers))
+        w = w/w.sum()
+        d1 = np.dot(w.T,ret)*252
+        d2 = np.sqrt(np.dot(w.T,np.dot(cov,w))*252)
+        d3 = d1/d2
+        monte_ret.append(d1)
+        monte_desv.append(d2)
+        monte_sharpe.append(d3)
+        weights.append(w)
+    df1 = pd.DataFrame(columns=tickers, data=weights)
+    df2 = pd.DataFrame(columns=['Ret', 'Desv', 'Sharpe'],)
+    df2['Ret'] = monte_ret
+    df2['Desv'] = monte_desv
+    df2['Sharpe'] = monte_sharpe
+    df = pd.concat([df1,df2],axis=1)
+    return df
+
+def plot_portfolios(port,sharpe,tickers):
+    opt_port = op_w
+    x = port['Desv'].values
+    y= port['Ret'].values
+    x_op = op_desv
+    y_op = op_ret
+    plt.figure()
+    plt.scatter(x, y,c=y/x,cmap='RdYlGn')
+    plt.title('Optimización de portafolio | ' + str(T) + ' simulaciones')
+    plt.ylabel('|Rentabilidad anual|')
+    plt.xlabel(
+    '|Volatilidad anual|'\
+        + '\n'+ '---------------------------'\
+        + '\n' + 'Activos: ' + str(tickers)\
+        + '\n' + 'Pesos: ' + str(opt_port)
+        + "\n" + "Rentabilidad del portafolio: " + str(op_ret)
+        + "\n" + "Volatilidad del portafolio: " + str(op_desv))
+    sns.set_theme()
+    plt.colorbar()
+    plt.scatter(x_op, y_op,color='purple')
+    plt.show()
+
+T = 1000000
+port_montecarlo = montecarlo(ret_log,tickers,T)
+max_sharpe = port_montecarlo[port_montecarlo['Sharpe'] == port_montecarlo['Sharpe'].max()]
+fig = plot_portfolios(port_montecarlo,max_sharpe,tickers)
